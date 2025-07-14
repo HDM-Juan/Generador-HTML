@@ -380,19 +380,19 @@
                         <div class="form-group">
                             <label>Tipo de Elemento:</label>
                             <select id="elementType">
-                                <option value="paragraph">📝 Párrafo</option>
-                                <option value="title">📋 Título</option>
-                                <option value="subtitle">📄 Subtítulo</option>
-                                <option value="section-header">📂 Encabezado de Sección</option>
-                                <option value="numbered-list">🔢 Lista Numerada</option>
-                                <option value="bullet-list">• Lista con Viñetas</option>
-                                <option value="section-break">➖ Cambio de Sección</option>
-                                <option value="subsection">📁 Subsección</option>
-                                <option value="image">🖼️ Imagen</option>
+                                <option value="párrafo">📝 Párrafo</option>
+                                <option value="título">📋 Título</option>
+                                <option value="subtítulo">📄 Subtítulo</option>
+                                <option value="encabezado-sección">📂 Encabezado de Sección</option>
+                                <option value="lista-numerada">🔢 Lista Numerada</option>
+                                <option value="lista-viñetas">• Lista con Viñetas</option>
+                                <option value="cambio-sección">➖ Cambio de Sección</option>
+                                <option value="subsección">📁 Subsección</option>
+                                <option value="imagen">🖼️ Imagen</option>
                                 <option value="video">🎥 Video</option>
-                                <option value="link">🔗 Enlace</option>
-                                <option value="button">🔘 Botón</option>
-                                <option value="action">⚡ Acción</option>
+                                <option value="enlace">🔗 Enlace</option>
+                                <option value="botón">🔘 Botón</option>
+                                <option value="acción">⚡ Acción</option>
                             </select>
                         </div>
 
@@ -455,10 +455,10 @@
                         <div class="form-group">
                             <label>Tipo de Plantilla:</label>
                             <select id="templateType">
-                                <option value="template">📋 Plantilla</option>
-                                <option value="variable-template">🔄 Plantilla Variable</option>
-                                <option value="fixed-message">📌 Mensaje Fijo</option>
-                                <option value="trackable-message">📍 Mensaje Fijo Rastreable</option>
+                                <option value="plantilla">📋 Plantilla</option>
+                                <option value="plantilla-variable">🔄 Plantilla Variable</option>
+                                <option value="mensaje-fijo">📌 Mensaje Fijo</option>
+                                <option value="mensaje-fijo-rastreable">📍 Mensaje Fijo Rastreable</option>
                             </select>
                         </div>
 
@@ -591,19 +591,19 @@
         // Obtener nombre del tipo de elemento
         function getElementTypeName(type) {
             const types = {
-                'paragraph': '📝 Párrafo',
-                'title': '📋 Título',
-                'subtitle': '📄 Subtítulo',
-                'section-header': '📂 Encabezado de Sección',
-                'numbered-list': '🔢 Lista Numerada',
-                'bullet-list': '• Lista con Viñetas',
-                'section-break': '➖ Cambio de Sección',
-                'subsection': '📁 Subsección',
-                'image': '🖼️ Imagen',
+                'párrafo': '📝 Párrafo',
+                'título': '📋 Título',
+                'subtítulo': '📄 Subtítulo',
+                'encabezado-sección': '📂 Encabezado de Sección',
+                'lista-numerada': '🔢 Lista Numerada',
+                'lista-viñetas': '• Lista con Viñetas',
+                'cambio-sección': '➖ Cambio de Sección',
+                'subsección': '📁 Subsección',
+                'imagen': '🖼️ Imagen',
                 'video': '🎥 Video',
-                'link': '🔗 Enlace',
-                'button': '🔘 Botón',
-                'action': '⚡ Acción'
+                'enlace': '🔗 Enlace',
+                'botón': '🔘 Botón',
+                'acción': '⚡ Acción'
             };
             return types[type] || type;
         }
@@ -724,19 +724,19 @@
             }
 
             switch (element.type) {
-                case 'paragraph':
+                case 'párrafo':
                     html = `<p style="${baseStyle}">${content}</p>`;
                     break;
-                case 'title':
+                case 'título':
                     html = `<h1 style="${baseStyle} font-weight: bold; font-size: ${parseInt(element.fontSize) + 8}px;">${content}</h1>`;
                     break;
-                case 'subtitle':
+                case 'subtítulo':
                     html = `<h2 style="${baseStyle} font-weight: bold; font-size: ${parseInt(element.fontSize) + 4}px;">${content}</h2>`;
                     break;
-                case 'section-header':
+                case 'encabezado-sección':
                     html = `<h3 style="${baseStyle} font-weight: bold; border-bottom: 2px solid #930017; padding-bottom: 5px;">${content}</h3>`;
                     break;
-                case 'numbered-list':
+                case 'lista-numerada':
                     const numberedItems = content.split('\n').filter(item => item.trim());
                     html = '<ol style="' + baseStyle + '">';
                     numberedItems.forEach(item => {
@@ -744,7 +744,7 @@
                     });
                     html += '</ol>';
                     break;
-                case 'bullet-list':
+                case 'lista-viñetas':
                     const bulletItems = content.split('\n').filter(item => item.trim());
                     html = '<ul style="' + baseStyle + '">';
                     bulletItems.forEach(item => {
@@ -752,13 +752,13 @@
                     });
                     html += '</ul>';
                     break;
-                case 'section-break':
+                case 'cambio-sección':
                     html = `<div style="border-top: 3px solid #bdc3c7; margin: 20px 0; padding-top: 20px;"></div>`;
                     break;
-                case 'subsection':
+                case 'subsección':
                     html = `<div style="${baseStyle} margin-left: 20px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #930017; border-radius: 5px;">${content}</div>`;
                     break;
-                case 'image':
+                case 'imagen':
                     html = `<img src="${element.content}" alt="Imagen" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0;">`;
                     break;
                 case 'video':
@@ -767,13 +767,13 @@
                         Tu navegador no soporta videos.
                     </video>`;
                     break;
-                case 'link':
+                case 'enlace':
                     html = `<a href="${element.link}" style="${baseStyle} color: #930017; text-decoration: none;">${content}</a>`;
                     break;
-                case 'button':
+                case 'botón':
                     html = `<a href="${element.link}" style="display: inline-block; padding: 12px 25px; background-color: #930017; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 10px 0;">${content}</a>`;
                     break;
-                case 'action':
+                case 'acción':
                     let actionHtml = '';
                     if (element.link.includes('mailto:')) {
                         actionHtml = `<a href="${element.link}" style="${baseStyle} color: #e74c3c;">📧 ${content}</a>`;
@@ -974,10 +974,10 @@
         // Obtener nombre del tipo de plantilla
         function getTemplateTypeName(type) {
             const types = {
-                'template': '📋 Plantilla',
-                'variable-template': '🔄 Plantilla Variable',
-                'fixed-message': '📌 Mensaje Fijo',
-                'trackable-message': '📍 Mensaje Fijo Rastreable'
+                'plantilla': '📋 Plantilla',
+                'plantilla-variable': '🔄 Plantilla Variable',
+                'mensaje-fijo': '📌 Mensaje Fijo',
+                'mensaje-fijo-rastreable': '📍 Mensaje Fijo Rastreable'
             };
             return types[type] || type;
         }
