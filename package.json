@@ -1,0 +1,12 @@
+{
+  "name": "hospital-movil-generador-html",
+  "version": "1.0.0",
+  "description": "Generador de HTML para Hospital del Móvil",
+  "main": "index.html",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HDM-Juan/Generador-HTML.git"
+  },
+  "author": "Hospital del Móvil",
+  "license": "Private"
+}
