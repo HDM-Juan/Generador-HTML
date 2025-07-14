@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador HTML - Taller de Reparación</title>
+    <title>Generador HTML - Hospital del Móvil</title>
     <style>
         * {
             margin: 0;
@@ -283,6 +283,24 @@
             display: block;
         }
 
+        .sheets-status {
+            background: #e8f5e8;
+            border: 1px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .sheets-status.connected {
+            display: block;
+        }
+
+        .sheets-status.error {
+            background: #fde8e8;
+            border-color: #e74c3c;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -312,6 +330,12 @@
                     <button class="tab active" onclick="showTab('basic')">Básico</button>
                     <button class="tab" onclick="showTab('elements')">Elementos</button>
                     <button class="tab" onclick="showTab('template')">Plantilla</button>
+                    <button class="tab" onclick="showTab('sheets')">Google Sheets</button>
+                </div>
+
+                <!-- Estado de Google Sheets -->
+                <div id="sheetsStatus" class="sheets-status">
+                    <span id="sheetsStatusText">🔗 Google Sheets conectado</span>
                 </div>
 
                 <!-- Configuración Básica -->
@@ -362,7 +386,7 @@
 
                         <div class="form-group">
                             <label>Email de Contacto:</label>
-                            <input type="email" id="contactEmail" placeholder="contacto@taller.com" onchange="updatePreview()">
+                            <input type="email" id="contactEmail" placeholder="contacto@hospitalmovil.com" onchange="updatePreview()">
                         </div>
 
                         <div class="form-group">
@@ -483,6 +507,53 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Google Sheets -->
+                <div id="sheets" class="tab-content">
+                    <div class="section">
+                        <h3>📊 Configuración Google Sheets</h3>
+                        
+                        <div class="form-group">
+                            <label>🔑 API Key de Google Cloud:</label>
+                            <input type="text" id="apiKeyInput" placeholder="AIzaSy...tu_api_key_aqui...XYZ">
+                            <small style="color: #7f8c8d; font-size: 12px;">Obtén tu API Key en Google Cloud Console</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>🔐 Client ID OAuth:</label>
+                            <input type="text" id="clientIdInput" placeholder="123456789-abc...xyz.apps.googleusercontent.com">
+                            <small style="color: #7f8c8d; font-size: 12px;">Tu Client ID de OAuth 2.0</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>📊 ID del Google Sheet:</label>
+                            <input type="text" id="spreadsheetIdInput" placeholder="1ABC123def456ghi789jkl012mno345pqrstu">
+                            <small style="color: #7f8c8d; font-size: 12px;">ID de tu Google Sheet "APP_CreadorHTML"</small>
+                        </div>
+
+                        <button class="btn" onclick="saveGoogleSheetsConfig()">💾 Guardar Configuración</button>
+                        <button class="btn btn-secondary" onclick="testGoogleSheetsConnection()">🔍 Probar Conexión</button>
+                    </div>
+
+                    <div class="section">
+                        <h3>🔄 Sincronización</h3>
+                        <button class="btn" onclick="syncWithGoogleSheets()">🔄 Sincronizar con Google Sheets</button>
+                        <button class="btn btn-secondary" onclick="authenticateWithGoogle()">🔐 Autenticar con Google</button>
+                        <button class="btn btn-danger" onclick="signOutFromGoogle()">🚪 Cerrar Sesión Google</button>
+                    </div>
+
+                    <div class="section">
+                        <h3>📖 Instrucciones</h3>
+                        <ol style="line-height: 1.6; color: #666;">
+                            <li><strong>API Key:</strong> Ir a Google Cloud Console → APIs y servicios → Credenciales</li>
+                            <li><strong>Client ID:</strong> Crear ID de cliente OAuth 2.0 para aplicaciones web</li>
+                            <li><strong>Sheet ID:</strong> Crear Google Sheet "APP_CreadorHTML" y copiar ID de la URL</li>
+                            <li><strong>Configurar:</strong> Pegar las credenciales y guardar</li>
+                            <li><strong>Autenticar:</strong> Click en "Autenticar con Google"</li>
+                            <li><strong>Sincronizar:</strong> Usar "Sincronizar con Google Sheets"</li>
+                        </ol>
+                    </div>
+                </div>
             </div>
 
             <div class="preview-panel">
@@ -498,6 +569,9 @@
                     <div id="htmlOutput" class="output-code"></div>
                     <button class="btn" onclick="copyToClipboard()">📋 Copiar Código</button>
                     <button class="btn btn-secondary" onclick="downloadHTML()">⬇️ Descargar HTML</button>
+                    <button class="btn btn-secondary" onclick="exportToGoogleSheets()">📊 Exportar para Sheets</button>
+                    <button class="btn btn-secondary" onclick="importFromGoogleSheets()">📥 Importar desde Sheets</button>
+                    <button class="btn btn-secondary" onclick="generateShareableLink()">🔗 Generar Enlace</button>
                 </div>
             </div>
         </div>
@@ -506,6 +580,35 @@
     <script>
         let elements = [];
         let templates = JSON.parse(localStorage.getItem('htmlTemplates') || '[]');
+        let googleSheetsConfig = JSON.parse(localStorage.getItem('googleSheetsConfig') || '{}');
+        let isGoogleSheetsAuthenticated = false;
+
+        // 📊 CONFIGURACIÓN GOOGLE SHEETS PARA HOSPITAL DEL MÓVIL
+        const HOSPITAL_MOVIL_SHEETS_CONFIG = {
+            // 🔑 Configuraciones que se cargan desde localStorage
+            apiKey: googleSheetsConfig.apiKey || '',
+            clientId: googleSheetsConfig.clientId || '',
+            spreadsheetId: googleSheetsConfig.spreadsheetId || '',
+            
+            // ✅ Configuraciones fijas
+            appUrl: 'https://hdm-juan.github.io/Generador-HTML/',
+            githubRepo: 'https://github.com/HDM-Juan/Generador-HTML',
+            scope: 'https://www.googleapis.com/auth/spreadsheets',
+            discoveryDoc: 'https://sheets.googleapis.com/$discovery/rest?version=v4',
+            empresa: {
+                nombre: "Hospital del Móvil",
+                colorPrincipal: "#930017",
+                colorSecundario: "#b8001f"
+            },
+            ranges: {
+                plantillas: 'Plantillas!A:L',
+                personal: 'Personal!A:H',
+                configuracion: 'Configuración_General!A:B',
+                elementos: 'Elementos_Predefinidos!A:F',
+                historial: 'Historial_Documentos!A:K',
+                imagenes: 'Imágenes_Recursos!A:H'
+            }
+        };
 
         // Cambiar entre pestañas
         function showTab(tabName) {
@@ -865,7 +968,301 @@
             }
         }
 
-        // Guardar plantilla
+        // 📊 FUNCIONES GOOGLE SHEETS
+
+        // Guardar configuración de Google Sheets
+        function saveGoogleSheetsConfig() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const clientId = document.getElementById('clientIdInput').value.trim();
+            const spreadsheetId = document.getElementById('spreadsheetIdInput').value.trim();
+
+            if (!apiKey || !clientId || !spreadsheetId) {
+                alert('⚠️ Por favor, completa todos los campos de configuración.');
+                return;
+            }
+
+            googleSheetsConfig = { apiKey, clientId, spreadsheetId };
+            localStorage.setItem('googleSheetsConfig', JSON.stringify(googleSheetsConfig));
+            
+            // Actualizar configuración global
+            HOSPITAL_MOVIL_SHEETS_CONFIG.apiKey = apiKey;
+            HOSPITAL_MOVIL_SHEETS_CONFIG.clientId = clientId;
+            HOSPITAL_MOVIL_SHEETS_CONFIG.spreadsheetId = spreadsheetId;
+
+            updateSheetsStatus('🟡 Configuración guardada. Prueba la conexión.', 'warning');
+            alert('✅ Configuración de Google Sheets guardada exitosamente');
+        }
+
+        // Probar conexión con Google Sheets
+        async function testGoogleSheetsConnection() {
+            if (!googleSheetsConfig.apiKey) {
+                alert('⚠️ Primero guarda la configuración de Google Sheets');
+                return;
+            }
+
+            try {
+                updateSheetsStatus('🔄 Probando conexión...', 'loading');
+                
+                const isInitialized = await initializeGoogleSheetsAPI();
+                if (isInitialized) {
+                    updateSheetsStatus('🟢 Conexión exitosa con Google Sheets', 'connected');
+                    alert('✅ Conexión con Google Sheets exitosa');
+                } else {
+                    throw new Error('No se pudo inicializar la API');
+                }
+            } catch (error) {
+                updateSheetsStatus('🔴 Error en la conexión: ' + error.message, 'error');
+                alert('❌ Error en la conexión: ' + error.message);
+            }
+        }
+
+        // Inicializar Google Sheets API
+        async function initializeGoogleSheetsAPI() {
+            try {
+                // Cargar Google API
+                await loadGoogleAPI();
+                
+                // Inicializar cliente
+                await gapi.client.init({
+                    apiKey: HOSPITAL_MOVIL_SHEETS_CONFIG.apiKey,
+                    clientId: HOSPITAL_MOVIL_SHEETS_CONFIG.clientId,
+                    discoveryDocs: [HOSPITAL_MOVIL_SHEETS_CONFIG.discoveryDoc],
+                    scope: HOSPITAL_MOVIL_SHEETS_CONFIG.scope
+                });
+
+                console.log('✅ Google Sheets API inicializada para Hospital del Móvil');
+                return true;
+            } catch (error) {
+                console.error('❌ Error inicializando Google Sheets API:', error);
+                return false;
+            }
+        }
+
+        // Cargar Google API
+        function loadGoogleAPI() {
+            return new Promise((resolve, reject) => {
+                if (window.gapi) {
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://apis.google.com/js/api.js';
+                script.onload = () => {
+                    gapi.load('client:auth2', resolve);
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // Autenticar con Google
+        async function authenticateWithGoogle() {
+            try {
+                updateSheetsStatus('🔄 Iniciando autenticación...', 'loading');
+                
+                const isInitialized = await initializeGoogleSheetsAPI();
+                if (!isInitialized) {
+                    throw new Error('No se pudo inicializar Google API');
+                }
+
+                const authInstance = gapi.auth2.getAuthInstance();
+                
+                if (authInstance.isSignedIn.get()) {
+                    updateSheetsStatus('🟢 Ya estás autenticado con Google', 'connected');
+                    isGoogleSheetsAuthenticated = true;
+                    return;
+                }
+
+                await authInstance.signIn();
+                isGoogleSheetsAuthenticated = true;
+                updateSheetsStatus('🟢 Autenticado exitosamente con Google', 'connected');
+                
+                const user = authInstance.currentUser.get();
+                const profile = user.getBasicProfile();
+                alert(`✅ Autenticado como: ${profile.getName()}`);
+                
+            } catch (error) {
+                updateSheetsStatus('🔴 Error en autenticación: ' + error.message, 'error');
+                alert('❌ Error en autenticación: ' + error.message);
+            }
+        }
+
+        // Cerrar sesión de Google
+        function signOutFromGoogle() {
+            try {
+                if (window.gapi && gapi.auth2) {
+                    const authInstance = gapi.auth2.getAuthInstance();
+                    if (authInstance.isSignedIn.get()) {
+                        authInstance.signOut();
+                        isGoogleSheetsAuthenticated = false;
+                        updateSheetsStatus('🟡 Sesión cerrada', 'warning');
+                        alert('👋 Sesión de Google cerrada exitosamente');
+                    } else {
+                        alert('No hay sesión activa de Google');
+                    }
+                } else {
+                    alert('Google API no está cargada');
+                }
+            } catch (error) {
+                alert('❌ Error cerrando sesión: ' + error.message);
+            }
+        }
+
+        // Sincronizar con Google Sheets
+        async function syncWithGoogleSheets() {
+            try {
+                if (!isGoogleSheetsAuthenticated) {
+                    alert('⚠️ Primero debes autenticarte con Google');
+                    return;
+                }
+
+                updateSheetsStatus('🔄 Sincronizando con Google Sheets...', 'loading');
+                
+                // Cargar plantillas desde Sheets
+                const sheetsTemplates = await loadTemplatesFromSheets();
+                
+                // Combinar con plantillas locales (evitar duplicados)
+                const localTemplateIds = templates.map(t => t.name);
+                const newTemplates = sheetsTemplates.filter(t => !localTemplateIds.includes(t.name));
+                
+                if (newTemplates.length > 0) {
+                    templates = [...templates, ...newTemplates];
+                    localStorage.setItem('htmlTemplates', JSON.stringify(templates));
+                    updateTemplateList();
+                    updateSheetsStatus(`🟢 ${newTemplates.length} plantillas sincronizadas desde Google Sheets`, 'connected');
+                    alert(`✅ ${newTemplates.length} plantillas sincronizadas desde Google Sheets`);
+                } else {
+                    updateSheetsStatus('🟢 Sincronización completa - No hay plantillas nuevas', 'connected');
+                    alert('✅ Sincronización completa - No hay plantillas nuevas');
+                }
+
+            } catch (error) {
+                updateSheetsStatus('🔴 Error en sincronización: ' + error.message, 'error');
+                alert('❌ Error en sincronización: ' + error.message);
+            }
+        }
+
+        // Cargar plantillas desde Google Sheets
+        async function loadTemplatesFromSheets() {
+            try {
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: HOSPITAL_MOVIL_SHEETS_CONFIG.spreadsheetId,
+                    range: HOSPITAL_MOVIL_SHEETS_CONFIG.ranges.plantillas
+                });
+
+                const rows = response.result.values;
+                if (!rows || rows.length < 2) return [];
+
+                const sheetsTemplates = [];
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row[8] === 'TRUE' || row[8] === true) { // Solo plantillas activas
+                        try {
+                            const template = {
+                                id: Date.now() + i,
+                                name: row[1] || '',
+                                type: row[2] || 'plantilla',
+                                category: row[3] || '',
+                                description: row[4] || '',
+                                config: JSON.parse(row[6] || '{}'),
+                                elements: JSON.parse(row[7] || '[]'),
+                                createdAt: row[9] || new Date().toISOString(),
+                                lastUsed: row[10] || '',
+                                createdBy: row[11] || 'Google Sheets',
+                                fromSheets: true
+                            };
+                            sheetsTemplates.push(template);
+                        } catch (parseError) {
+                            console.warn('Error parseando plantilla de la fila', i, parseError);
+                        }
+                    }
+                }
+
+                return sheetsTemplates;
+            } catch (error) {
+                console.error('❌ Error cargando plantillas desde Sheets:', error);
+                throw error;
+            }
+        }
+
+        // Guardar plantilla en Google Sheets
+        async function saveTemplateToSheets(template) {
+            try {
+                if (!isGoogleSheetsAuthenticated) {
+                    return false;
+                }
+
+                const now = new Date().toISOString();
+                const templateId = `TEMP_${Date.now()}`;
+                
+                const values = [[
+                    templateId,
+                    template.name,
+                    template.type,
+                    template.category,
+                    template.description,
+                    template.config.viewType || 'email',
+                    JSON.stringify(template.config),
+                    JSON.stringify(template.elements),
+                    'TRUE', // Activa
+                    now, // Fecha creación
+                    now, // Último uso
+                    getCurrentUser() // Usuario actual
+                ]];
+
+                await gapi.client.sheets.spreadsheets.values.append({
+                    spreadsheetId: HOSPITAL_MOVIL_SHEETS_CONFIG.spreadsheetId,
+                    range: 'Plantillas!A:L',
+                    valueInputOption: 'RAW',
+                    resource: { values }
+                });
+
+                console.log('✅ Plantilla guardada en Sheets:', templateId);
+                return templateId;
+            } catch (error) {
+                console.error('❌ Error guardando plantilla en Sheets:', error);
+                throw error;
+            }
+        }
+
+        // Obtener usuario actual
+        function getCurrentUser() {
+            if (window.gapi && gapi.auth2) {
+                const authInstance = gapi.auth2.getAuthInstance();
+                if (authInstance.isSignedIn.get()) {
+                    const user = authInstance.currentUser.get();
+                    const profile = user.getBasicProfile();
+                    return profile.getName();
+                }
+            }
+            return document.getElementById('staffName')?.value || 'Usuario Desconocido';
+        }
+
+        // Actualizar estado de Google Sheets
+        function updateSheetsStatus(message, type) {
+            const statusDiv = document.getElementById('sheetsStatus');
+            const statusText = document.getElementById('sheetsStatusText');
+            
+            statusText.textContent = message;
+            statusDiv.className = 'sheets-status';
+            
+            switch (type) {
+                case 'connected':
+                    statusDiv.classList.add('connected');
+                    break;
+                case 'error':
+                    statusDiv.classList.add('error');
+                    break;
+                case 'warning':
+                case 'loading':
+                    statusDiv.style.display = 'block';
+                    break;
+            }
+        }
+
+        // Guardar plantilla (versión actualizada con Google Sheets)
         function saveTemplate() {
             const templateName = document.getElementById('templateName').value;
             const templateType = document.getElementById('templateType').value;
@@ -898,11 +1295,21 @@
                 createdAt: new Date().toISOString()
             };
 
+            // Guardar localmente
             templates.push(template);
             localStorage.setItem('htmlTemplates', JSON.stringify(templates));
             updateTemplateList();
             
-            alert('✅ Plantilla guardada exitosamente');
+            // Intentar guardar en Google Sheets
+            if (isGoogleSheetsAuthenticated) {
+                saveTemplateToSheets(template).then(() => {
+                    alert('✅ Plantilla guardada localmente y en Google Sheets');
+                }).catch(error => {
+                    alert('✅ Plantilla guardada localmente. Error en Google Sheets: ' + error.message);
+                });
+            } else {
+                alert('✅ Plantilla guardada localmente. Para sincronizar con Google Sheets, autentica primero.');
+            }
             
             // Limpiar campos
             document.getElementById('templateName').value = '';
@@ -946,8 +1353,9 @@
             templates.forEach(template => {
                 const templateDiv = document.createElement('div');
                 templateDiv.className = 'template-card';
+                const sourceIcon = template.fromSheets ? '📊' : '💾';
                 templateDiv.innerHTML = `
-                    <h4>${template.name}</h4>
+                    <h4>${sourceIcon} ${template.name}</h4>
                     <p><strong>Tipo:</strong> ${getTemplateTypeName(template.type)}</p>
                     <p><strong>Categoría:</strong> ${template.category || 'Sin categoría'}</p>
                     <p>${template.description || 'Sin descripción'}</p>
@@ -1164,21 +1572,6 @@
             }
         }
 
-        // Inicialización
-        document.addEventListener('DOMContentLoaded', function() {
-            updateTemplateList();
-            updatePreview();
-            loadFromShareableLink();
-
-            // Agregar botones adicionales
-            const outputSection = document.querySelector('.output-section');
-            outputSection.innerHTML += `
-                <button class="btn btn-secondary" onclick="exportToGoogleSheets()">📊 Exportar para Sheets</button>
-                <button class="btn btn-secondary" onclick="importFromGoogleSheets()">📥 Importar desde Sheets</button>
-                <button class="btn btn-secondary" onclick="generateShareableLink()">🔗 Generar Enlace</button>
-            `;
-        });
-
         // Auto-guardar en localStorage cada vez que se modifica algo
         function autoSave() {
             const autoSaveData = {
@@ -1240,13 +1633,35 @@
             }
         }
 
-        // Agregar auto-guardado a los eventos de cambio
+        // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
+            // Cargar configuración guardada de Google Sheets
+            if (googleSheetsConfig.apiKey) {
+                document.getElementById('apiKeyInput').value = googleSheetsConfig.apiKey;
+                document.getElementById('clientIdInput').value = googleSheetsConfig.clientId || '';
+                document.getElementById('spreadsheetIdInput').value = googleSheetsConfig.spreadsheetId || '';
+                
+                // Actualizar configuración global
+                HOSPITAL_MOVIL_SHEETS_CONFIG.apiKey = googleSheetsConfig.apiKey;
+                HOSPITAL_MOVIL_SHEETS_CONFIG.clientId = googleSheetsConfig.clientId;
+                HOSPITAL_MOVIL_SHEETS_CONFIG.spreadsheetId = googleSheetsConfig.spreadsheetId;
+                
+                if (googleSheetsConfig.apiKey && googleSheetsConfig.clientId && googleSheetsConfig.spreadsheetId) {
+                    updateSheetsStatus('🟡 Configuración cargada. Autentica para usar Google Sheets.', 'warning');
+                }
+            }
+
             loadAutoSave();
-            
+            updateTemplateList();
+            updatePreview();
+            loadFromShareableLink();
+
             // Auto-guardar cada vez que cambia algo
             document.addEventListener('change', autoSave);
             document.addEventListener('input', autoSave);
+
+            console.log('🏥 Hospital del Móvil - Generador HTML con Google Sheets cargado');
+            console.log('📊 Para usar Google Sheets: Configurar credenciales en la pestaña "Google Sheets"');
         });
     </script>
 </body>
